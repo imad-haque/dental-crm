@@ -167,33 +167,46 @@ function EditMemberModal({ member, onSave, onClose }) {
 export default function TeamPage() {
   const toast = useToast();
   const { teamMembers, addTeamMember, updateTeamMember, removeTeamMember, session } = useAuth();
-  const [showAdd, setShowAdd]   = useState(false);
-  const [editing, setEditing]   = useState(null);
+  const [showAdd, setShowAdd]     = useState(false);
+  const [editing, setEditing]     = useState(null);
+  const [saving, setSaving]       = useState(false);
 
-  const handleAdd = (data) => {
-    addTeamMember(data);
-    setShowAdd(false);
-    toast(`${data.name} added to team`);
+  const handleAdd = async (data) => {
+    setSaving(true);
+    try {
+      await addTeamMember(data);
+      setShowAdd(false);
+      toast(`${data.name} added to team`);
+    } catch (err) {
+      toast('Failed to add member. Check your connection.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEdit = (data) => {
-    updateTeamMember(editing.email, data);
-    setEditing(null);
-    toast(`${data.name} updated`);
+  const handleEdit = async (data) => {
+    setSaving(true);
+    try {
+      await updateTeamMember(editing.email, data);
+      setEditing(null);
+      toast(`${data.name} updated`);
+    } catch (err) {
+      toast('Failed to update member.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleRemove = (member) => {
-    if (member.isOwner) {
-      toast('The owner account cannot be removed', 'error');
-      return;
-    }
-    if (member.email === session?.email) {
-      toast('You cannot remove yourself', 'error');
-      return;
-    }
+  const handleRemove = async (member) => {
+    if (member.isOwner) { toast('The owner account cannot be removed', 'error'); return; }
+    if (member.email === session?.email) { toast('You cannot remove yourself', 'error'); return; }
     if (window.confirm(`Remove ${member.name} (${member.email}) from the team? They will lose access immediately.`)) {
-      removeTeamMember(member.email);
-      toast(`${member.name} removed from team`, 'error');
+      try {
+        await removeTeamMember(member.email);
+        toast(`${member.name} removed from team`, 'error');
+      } catch {
+        toast('Failed to remove member.', 'error');
+      }
     }
   };
 
@@ -309,7 +322,7 @@ export default function TeamPage() {
         <AddMemberModal
           existing={teamMembers}
           onSave={handleAdd}
-          onClose={() => setShowAdd(false)}
+          onClose={() => !saving && setShowAdd(false)}
         />
       )}
 
@@ -317,7 +330,7 @@ export default function TeamPage() {
         <EditMemberModal
           member={editing}
           onSave={handleEdit}
-          onClose={() => setEditing(null)}
+          onClose={() => !saving && setEditing(null)}
         />
       )}
     </div>

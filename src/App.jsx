@@ -294,7 +294,24 @@ function CRMApp() {
 
 // ── Root — providers + auth gate ──────────────────────────────────────────
 function Root() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{
+        height: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: 'var(--color-canvas)', gap: 'var(--sp-md)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', color: 'var(--color-ink)' }}>
+          <IconTooth size={24} />
+          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.4px' }}>DentalCRM</span>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--color-mute)' }}>Connecting…</div>
+      </div>
+    );
+  }
+
   return isLoggedIn ? <CRMApp /> : <LoginPage />;
 }
 
