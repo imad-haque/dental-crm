@@ -8,12 +8,12 @@ export default function LeadModal({ lead, onSave, onClose }) {
   const { isAdmin, salespersonId, session, teamMembers } = useAuth();
   const isEdit = !!lead;
 
-  // Parse stored phone into dialCode + number parts
+  // Parse stored phone into countryId + number parts
   function parsePhone(stored) {
-    if (!stored) return { dialCode: '+91', number: '' };
+    if (!stored) return { countryId: 'IN', number: '' };
     const match = COUNTRY_CODES.find(c => stored.startsWith(c.code));
-    if (match) return { dialCode: match.code, number: stored.slice(match.code.length).trim() };
-    return { dialCode: '+91', number: stored };
+    if (match) return { countryId: match.id, number: stored.slice(match.code.length).trim() };
+    return { countryId: 'IN', number: stored };
   }
 
   const parsedPhone = parsePhone(lead?.phone);
@@ -52,8 +52,7 @@ export default function LeadModal({ lead, onSave, onClose }) {
   }));
 
   // Phone is stored as combined string e.g. "+91 98765 43210"
-  // We split it into dialCode + number for the UI
-  const [dialCode, setDialCode] = useState(parsedPhone.dialCode);
+  const [countryId,   setCountryId]   = useState(parsedPhone.countryId);
   const [phoneNumber, setPhoneNumber] = useState(parsedPhone.number);
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
@@ -62,7 +61,8 @@ export default function LeadModal({ lead, onSave, onClose }) {
     e.preventDefault();
     if (!form.name || !form.email) return;
     // Combine dial code + number into single phone string
-    const combinedPhone = phoneNumber ? `${dialCode} ${phoneNumber}` : '';
+    const selectedCountry = COUNTRY_CODES.find(c => c.id === countryId);
+    const combinedPhone = phoneNumber ? `${selectedCountry?.code ?? '+91'} ${phoneNumber}` : '';
     onSave({
       ...form,
       phone:           combinedPhone,
@@ -105,25 +105,34 @@ export default function LeadModal({ lead, onSave, onClose }) {
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-phone">Phone</label>
                 <div className="phone-field">
-                  <select
-                    className="select phone-dial-select"
-                    value={dialCode}
-                    onChange={e => setDialCode(e.target.value)}
-                    aria-label="Country code"
-                  >
-                    {COUNTRY_CODES.map((c, i) => (
-                      <option key={`${c.code}-${c.name}`} value={c.code}>
-                        {c.flag} {c.code} {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Custom phone prefix — shows flag+code, full name in dropdown */}
+                  <div className="phone-prefix-wrap">
+                    <select
+                      className="phone-prefix-select"
+                      value={countryId}
+                      onChange={e => setCountryId(e.target.value)}
+                      aria-label="Country code"
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.flag} {c.code} {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {/* Visible label — shown on top of the select */}
+                    <div className="phone-prefix-label" aria-hidden="true">
+                      {COUNTRY_CODES.find(c => c.id === countryId)?.flag ?? '🇮🇳'}
+                      {' '}
+                      {COUNTRY_CODES.find(c => c.id === countryId)?.code ?? '+91'}
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ marginLeft: 2, flexShrink: 0 }}><path d="M2 4l3 3 3-3"/></svg>
+                    </div>
+                  </div>
                   <input
                     id="lead-phone"
                     className="text-input phone-number-input"
                     type="tel"
                     value={phoneNumber}
                     onChange={e => {
-                      // Only allow digits, spaces, hyphens
                       const val = e.target.value.replace(/[^\d\s\-]/g, '');
                       setPhoneNumber(val);
                     }}
