@@ -1,27 +1,44 @@
-import { useState } from 'react';
-import { SALESPERSONS, PIPELINE_STAGES, LEAD_SOURCES, TREATMENTS } from '../data/mockData';
+import { useState, useMemo } from 'react';
+import { PIPELINE_STAGES, LEAD_SOURCES, TREATMENTS } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import { IconX } from './Icons';
 
 export default function LeadModal({ lead, onSave, onClose }) {
-  const { isAdmin, salespersonId } = useAuth();
+  const { isAdmin, salespersonId, session, teamMembers } = useAuth();
   const isEdit = !!lead;
 
-  const [form, setForm] = useState(
-    lead || {
-      name: '',
-      email: '',
-      phone: '',
-      treatment: TREATMENTS[0],
-      expectedRevenue: '',
-      stage: 'new',
-      // Non-admins are always assigned to their own salesperson profile
-      salesperson: isAdmin ? 'sp1' : (salespersonId || 'sp1'),
-      source: LEAD_SOURCES[0],
-      notes: '',
-      priority: 'medium',
-    }
-  );
+  // Build salesperson options from real team members who have a salespersonId assigned
+  // Each entry: { id: "sp1" (or email), name: "Sarah", initials: "SM" }
+  const salespersonOptions = useMemo(() => {
+    if (!teamMembers?.length) return [];
+    return teamMembers
+      .filter(m => m.salespersonId)
+      .map(m => ({
+        id:       m.salespersonId,   // the sp1/sp2 slot or email used as key
+        email:    m.email,
+        name:     m.name,
+        initials: m.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+      }));
+  }, [teamMembers]);
+
+  // Default salesperson: for admins use first option, for users use their own
+  const defaultSalesperson = isAdmin
+    ? (salespersonOptions[0]?.id ?? '')
+    : (salespersonId ?? '');
+
+  const [form, setForm] = useState(() => ({
+    name:            '',
+    email:           '',
+    phone:           '',
+    treatment:       TREATMENTS[0],
+    expectedRevenue: '',
+    stage:           'new',
+    salesperson:     lead?.salesperson ?? defaultSalesperson,
+    source:          LEAD_SOURCES[0],
+    notes:           '',
+    priority:        'medium',
+    ...(lead ?? {}),  // spread existing lead data when editing
+  }));
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
 
@@ -30,13 +47,17 @@ export default function LeadModal({ lead, onSave, onClose }) {
     if (!form.name || !form.email) return;
     onSave({
       ...form,
-      // Enforce ownership for non-admins regardless of form value
-      salesperson: isAdmin ? form.salesperson : (salespersonId || form.salesperson),
-      id: lead?.id || `lead-${Date.now()}`,
-      createdAt: lead?.createdAt || new Date().toISOString().slice(0, 10),
+      salesperson:     isAdmin ? form.salesperson : (salespersonId ?? form.salesperson),
+      id:              lead?.id ?? `lead-${Date.now()}`,
+      createdAt:       lead?.createdAt ?? new Date().toISOString().slice(0, 10),
       expectedRevenue: Number(form.expectedRevenue) || 0,
     });
   };
+
+  // Find current user's display name for the locked field
+  const myMember = teamMembers?.find(m => m.email === session?.email);
+  const myDisplayName = myMember?.name ?? session?.name ?? salespersonId ?? 'You';
+  const myInitials = myDisplayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -50,122 +71,83 @@ export default function LeadModal({ lead, onSave, onClose }) {
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
+            {/* ── Name + Email ─────────────────────────────────────── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-md)' }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-name">Full name *</label>
-                <input
-                  id="lead-name"
-                  className="text-input"
-                  value={form.name}
-                  onChange={e => set('name', e.target.value)}
-                  placeholder="Emma Thompson"
-                  required
-                />
+                <input id="lead-name" className="text-input" value={form.name}
+                  onChange={e => set('name', e.target.value)} placeholder="Emma Thompson" required />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-email">Email *</label>
-                <input
-                  id="lead-email"
-                  className="text-input"
-                  type="email"
-                  value={form.email}
-                  onChange={e => set('email', e.target.value)}
-                  placeholder="emma@example.com"
-                  required
-                />
+                <input id="lead-email" className="text-input" type="email" value={form.email}
+                  onChange={e => set('email', e.target.value)} placeholder="emma@example.com" required />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-phone">Phone</label>
-                <input
-                  id="lead-phone"
-                  className="text-input"
-                  value={form.phone}
-                  onChange={e => set('phone', e.target.value)}
-                  placeholder="+44 7700 000000"
-                />
+                <input id="lead-phone" className="text-input" value={form.phone}
+                  onChange={e => set('phone', e.target.value)} placeholder="+44 7700 000000" />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-revenue">Expected revenue (£)</label>
-                <input
-                  id="lead-revenue"
-                  className="text-input"
-                  type="number"
-                  min="0"
-                  value={form.expectedRevenue}
-                  onChange={e => set('expectedRevenue', e.target.value)}
-                  placeholder="0"
-                />
+                <input id="lead-revenue" className="text-input" type="number" min="0"
+                  value={form.expectedRevenue} onChange={e => set('expectedRevenue', e.target.value)} placeholder="0" />
               </div>
             </div>
 
+            {/* ── Treatment ────────────────────────────────────────── */}
             <div className="form-group">
               <label className="form-label" htmlFor="lead-treatment">Treatment interest</label>
-              <select
-                id="lead-treatment"
-                className="select"
-                style={{ width: '100%' }}
-                value={form.treatment}
-                onChange={e => set('treatment', e.target.value)}
-              >
+              <select id="lead-treatment" className="select" style={{ width: '100%' }}
+                value={form.treatment} onChange={e => set('treatment', e.target.value)}>
                 {TREATMENTS.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
 
+            {/* ── Stage / Salesperson / Priority ───────────────────── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--sp-md)' }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-stage">Stage</label>
-                <select
-                  id="lead-stage"
-                  className="select"
-                  style={{ width: '100%' }}
-                  value={form.stage}
-                  onChange={e => set('stage', e.target.value)}
-                >
-                  {PIPELINE_STAGES.map(s => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
-                  ))}
+                <select id="lead-stage" className="select" style={{ width: '100%' }}
+                  value={form.stage} onChange={e => set('stage', e.target.value)}>
+                  {PIPELINE_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-sp">
                   Salesperson
-                  {!isAdmin && (
-                    <span className="form-locked-badge">locked</span>
-                  )}
+                  {!isAdmin && <span className="form-locked-badge">locked</span>}
                 </label>
+
                 {isAdmin ? (
-                  <select
-                    id="lead-sp"
-                    className="select"
-                    style={{ width: '100%' }}
-                    value={form.salesperson}
-                    onChange={e => set('salesperson', e.target.value)}
-                  >
-                    {SALESPERSONS.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
+                  // Admin: full dropdown of all team members who have a salesperson slot
+                  salespersonOptions.length > 0 ? (
+                    <select id="lead-sp" className="select" style={{ width: '100%' }}
+                      value={form.salesperson} onChange={e => set('salesperson', e.target.value)}>
+                      {salespersonOptions.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--color-mute)', padding: '6px 0' }}>
+                      No team members with a salesperson profile yet. Add them in the Team tab.
+                    </div>
+                  )
                 ) : (
+                  // Non-admin: locked to their own name
                   <div className="locked-field">
-                    <span className="avatar avatar-sm">
-                      {SALESPERSONS.find(s => s.id === salespersonId)?.avatar ?? '?'}
-                    </span>
-                    <span>{SALESPERSONS.find(s => s.id === salespersonId)?.name ?? salespersonId}</span>
-                    <input type="hidden" name="salesperson" value={salespersonId || ''} />
+                    <span className="avatar avatar-sm">{myInitials}</span>
+                    <span>{myDisplayName}</span>
+                    <input type="hidden" name="salesperson" value={salespersonId ?? ''} />
                   </div>
                 )}
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-priority">Priority</label>
-                <select
-                  id="lead-priority"
-                  className="select"
-                  style={{ width: '100%' }}
-                  value={form.priority}
-                  onChange={e => set('priority', e.target.value)}
-                >
+                <select id="lead-priority" className="select" style={{ width: '100%' }}
+                  value={form.priority} onChange={e => set('priority', e.target.value)}>
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
@@ -173,28 +155,21 @@ export default function LeadModal({ lead, onSave, onClose }) {
               </div>
             </div>
 
+            {/* ── Source ───────────────────────────────────────────── */}
             <div className="form-group">
               <label className="form-label" htmlFor="lead-source">Lead source</label>
-              <select
-                id="lead-source"
-                className="select"
-                style={{ width: '100%' }}
-                value={form.source}
-                onChange={e => set('source', e.target.value)}
-              >
+              <select id="lead-source" className="select" style={{ width: '100%' }}
+                value={form.source} onChange={e => set('source', e.target.value)}>
                 {LEAD_SOURCES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
 
+            {/* ── Notes ────────────────────────────────────────────── */}
             <div className="form-group">
               <label className="form-label" htmlFor="lead-notes">Notes</label>
-              <textarea
-                id="lead-notes"
-                className="text-input"
-                value={form.notes}
+              <textarea id="lead-notes" className="text-input" value={form.notes}
                 onChange={e => set('notes', e.target.value)}
-                placeholder="Add any notes about this lead…"
-              />
+                placeholder="Add any notes about this lead…" />
             </div>
           </div>
 

@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { SALESPERSONS, PIPELINE_STAGES } from '../data/mockData';
+import { PIPELINE_STAGES } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import { IconX, IconMail, IconSend, IconEdit, IconTrash, IconPhone } from './Icons';
 
 export default function LeadDetailPanel({ lead, onClose, onStageChange, onEdit, onDelete, onEmailSent, onToast }) {
-  const { isAdmin, salespersonId } = useAuth();
+  const { isAdmin, salespersonId, teamMembers } = useAuth();
   const canEdit = isAdmin || lead.salesperson === salespersonId;
 
   const [showEmailCompose, setShowEmailCompose] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
 
-  const sp = SALESPERSONS.find(s => s.id === lead.salesperson);
+  // Resolve salesperson from real team members instead of hardcoded list
+  const sp         = teamMembers?.find(m => m.salespersonId === lead.salesperson);
+  const spName     = sp?.name ?? lead.salesperson ?? '—';
+  const spInitials = spName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   const handleSend = () => {
     if (!emailSubject.trim() || !emailBody.trim()) {
@@ -74,7 +77,7 @@ export default function LeadDetailPanel({ lead, onClose, onStageChange, onEdit, 
           {!canEdit && (
             <div className="readonly-notice">
               <span>👁</span>
-              <span>This lead belongs to {sp?.name ?? 'another team member'}. You can view it but not edit it.</span>
+              <span>This lead belongs to {spName}. You can view it but not edit it.</span>
             </div>
           )}
 
@@ -135,8 +138,8 @@ export default function LeadDetailPanel({ lead, onClose, onStageChange, onEdit, 
             <div className="detail-row">
               <div className="detail-row-label">Salesperson</div>
               <div className="detail-row-value flex items-center gap-xs">
-                <span className="avatar avatar-sm">{sp?.avatar}</span>
-                {sp?.name}
+                <span className="avatar avatar-sm">{spInitials}</span>
+                {spName}
               </div>
             </div>
             <div className="detail-row">

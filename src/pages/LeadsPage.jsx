@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { SALESPERSONS, PIPELINE_STAGES } from '../data/mockData';
+import { PIPELINE_STAGES } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 import LeadModal from '../components/LeadModal';
 import LeadDetailPanel from '../components/LeadDetailPanel';
 import { IconPlus, IconSearch, IconFilter } from '../components/Icons';
@@ -9,6 +10,20 @@ function stageBadgeClass(stage) {
 }
 
 export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead, onToast }) {
+  const { teamMembers } = useAuth();
+
+  // Build salesperson lookup from real team members
+  const spMap = useMemo(() => {
+    const map = {};
+    (teamMembers ?? []).forEach(m => {
+      if (m.salespersonId) map[m.salespersonId] = m;
+    });
+    return map;
+  }, [teamMembers]);
+
+  const spList = useMemo(() =>
+    (teamMembers ?? []).filter(m => m.salespersonId),
+  [teamMembers]);
   const [search, setSearch] = useState('');
   const [filterStage, setFilterStage] = useState('all');
   const [filterSP, setFilterSP] = useState('all');
@@ -82,7 +97,7 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
         </select>
         <select className="select" value={filterSP} onChange={e => setFilterSP(e.target.value)}>
           <option value="all">All salespersons</option>
-          {SALESPERSONS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          {spList.map(m => <option key={m.salespersonId} value={m.salespersonId}>{m.name}</option>)}
         </select>
       </div>
 
@@ -110,7 +125,6 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
               </thead>
               <tbody>
                 {filtered.map(lead => {
-                  const sp = SALESPERSONS.find(s => s.id === lead.salesperson);
                   return (
                     <tr key={lead.id} onClick={() => setSelectedLead(lead)}>
                       <td>
@@ -125,8 +139,8 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
                       <td><span className={stageBadgeClass(lead.stage)}>{PIPELINE_STAGES.find(s => s.id === lead.stage)?.label}</span></td>
                       <td>
                         <div className="flex items-center gap-xs">
-                          <span className="avatar avatar-sm">{sp?.avatar}</span>
-                          <span style={{ fontSize: 13 }}>{sp?.name.split(' ')[0]}</span>
+                          <span className="avatar avatar-sm">{spMap[lead.salesperson]?.name?.split(' ').map(w=>w[0]).join('').slice(0,2) ?? '?'}</span>
+                          <span style={{ fontSize: 13 }}>{spMap[lead.salesperson]?.name?.split(' ')[0] ?? lead.salesperson}</span>
                         </div>
                       </td>
                       <td><span className={`badge badge-priority-${lead.priority}`} style={{ textTransform: 'capitalize' }}>{lead.priority}</span></td>

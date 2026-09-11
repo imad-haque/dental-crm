@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { SALESPERSONS, PIPELINE_STAGES } from '../data/mockData';
+import { PIPELINE_STAGES } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 import LeadModal from '../components/LeadModal';
 import LeadDetailPanel from '../components/LeadDetailPanel';
 import { IconPlus, IconKanban, IconList, IconSearch } from '../components/Icons';
@@ -10,7 +11,7 @@ function stageBadgeClass(stage) {
 }
 
 // ── Kanban view ──────────────────────────────
-function KanbanView({ leads, onDragEnd, onCardClick }) {
+function KanbanView({ leads, onDragEnd, onCardClick, spMap }) {
   const grouped = PIPELINE_STAGES.reduce((acc, s) => {
     acc[s.id] = leads.filter(l => l.stage === s.id);
     return acc;
@@ -40,7 +41,6 @@ function KanbanView({ leads, onDragEnd, onCardClick }) {
                   className={`kanban-col-body kanban-drop-zone ${snapshot.isDraggingOver ? 'is-dragging-over' : ''}`}
                 >
                   {grouped[stage.id].map((lead, index) => {
-                    const sp = SALESPERSONS.find(s => s.id === lead.salesperson);
                     return (
                       <Draggable key={lead.id} draggableId={lead.id} index={index}>
                         {(provided, snapshot) => (
@@ -57,7 +57,9 @@ function KanbanView({ leads, onDragEnd, onCardClick }) {
                               <span className="kanban-revenue">£{lead.expectedRevenue.toLocaleString()}</span>
                               <div className="flex items-center gap-xs">
                                 <span className={`badge badge-priority-${lead.priority}`} style={{ textTransform: 'capitalize', fontSize: 10 }}>{lead.priority}</span>
-                                <span className="avatar avatar-sm">{sp?.avatar}</span>
+                                <span className="avatar avatar-sm">
+                                  {spMap?.[lead.salesperson]?.name?.split(' ').map(w=>w[0]).join('').slice(0,2) ?? '?'}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -82,7 +84,7 @@ function KanbanView({ leads, onDragEnd, onCardClick }) {
 }
 
 // ── List view ────────────────────────────────
-function ListView({ leads, onRowClick }) {
+function ListView({ leads, onRowClick, spMap }) {
   return (
     <div className="table-wrap">
       <table>
@@ -98,7 +100,8 @@ function ListView({ leads, onRowClick }) {
         </thead>
         <tbody>
           {leads.map(lead => {
-            const sp = SALESPERSONS.find(s => s.id === lead.salesperson);
+            const spMember = spMap?.[lead.salesperson];
+            const spInitials = spMember?.name?.split(' ').map(w=>w[0]).join('').slice(0,2) ?? '?';
             return (
               <tr key={lead.id} onClick={() => onRowClick(lead)}>
                 <td>
@@ -113,8 +116,8 @@ function ListView({ leads, onRowClick }) {
                 <td><span className={stageBadgeClass(lead.stage)}>{PIPELINE_STAGES.find(s => s.id === lead.stage)?.label}</span></td>
                 <td>
                   <div className="flex items-center gap-xs">
-                    <span className="avatar avatar-sm">{sp?.avatar}</span>
-                    <span style={{ fontSize: 13 }}>{sp?.name}</span>
+                    <span className="avatar avatar-sm">{spInitials}</span>
+                    <span style={{ fontSize: 13 }}>{spMember?.name ?? lead.salesperson}</span>
                   </div>
                 </td>
               </tr>
@@ -128,11 +131,18 @@ function ListView({ leads, onRowClick }) {
 
 // ── Main ─────────────────────────────────────
 export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteLead, onToast }) {
+  const { teamMembers } = useAuth();
   const [view, setView] = useState('kanban');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editLead, setEditLead] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
+
+  const spMap = useMemo(() => {
+    const map = {};
+    (teamMembers ?? []).forEach(m => { if (m.salespersonId) map[m.salespersonId] = m; });
+    return map;
+  }, [teamMembers]);
 
   const filtered = search
     ? leads.filter(l =>
@@ -187,8 +197,8 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
 
       <div className="page-body">
         {view === 'kanban'
-          ? <KanbanView leads={filtered} onDragEnd={handleDragEnd} onCardClick={setSelectedLead} />
-          : <ListView leads={filtered} onRowClick={setSelectedLead} />
+          ? <KanbanView leads={filtered} onDragEnd={handleDragEnd} onCardClick={setSelectedLead} spMap={spMap} />
+          : <ListView leads={filtered} onRowClick={setSelectedLead} spMap={spMap} />
         }
       </div>
 
