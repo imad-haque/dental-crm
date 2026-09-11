@@ -23,7 +23,14 @@ function KanbanView({ leads, onDragEnd, onCardClick }) {
           <div key={stage.id} className="kanban-col">
             <div className="kanban-col-header">
               <span className="kanban-col-label">{stage.label}</span>
-              <span className="kanban-col-count">{grouped[stage.id].length}</span>
+              <div className="flex items-center gap-xs">
+                {grouped[stage.id].length > 0 && (
+                  <span style={{ fontSize: 11, color: 'var(--color-mute)', fontFamily: 'var(--font-mono)' }}>
+                    £{grouped[stage.id].reduce((s, l) => s + l.expectedRevenue, 0).toLocaleString()}
+                  </span>
+                )}
+                <span className="kanban-col-count">{grouped[stage.id].length}</span>
+              </div>
             </div>
             <Droppable droppableId={stage.id}>
               {(provided, snapshot) => (
@@ -120,7 +127,7 @@ function ListView({ leads, onRowClick }) {
 }
 
 // ── Main ─────────────────────────────────────
-export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteLead }) {
+export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteLead, onToast }) {
   const [view, setView] = useState('kanban');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -209,6 +216,7 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
           onEdit={(lead) => { setEditLead(lead); setShowModal(true); setSelectedLead(null); }}
           onDelete={onDeleteLead}
           onEmailSent={(e) => console.log('Email queued:', e)}
+          onToast={onToast}
         />
       )}
     </div>

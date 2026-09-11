@@ -129,3 +129,20 @@ export const IconTooth = ({ size = 20 }) => (
     <path d="M7 2C5 2 2 4 2 7c0 2 1 3 1 5 0 2 1 4 2 5s1-1 2-3 2-3 3-3 2 1 3 3 1 4 2 3 2-3 2-5c0-2 1-3 1-5 0-3-3-5-5-5-1 0-2 .5-3 1C9 2.5 8 2 7 2z"/>
   </svg>
 );
+
+export const IconTeam = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="5.5" cy="5" r="2"/>
+    <path d="M1 14c0-2.49 2.01-4.5 4.5-4.5S10 11.51 10 14"/>
+    <circle cx="11.5" cy="5" r="1.5"/>
+    <path d="M13 14c0-1.66-.9-3.12-2.24-3.9"/>
+  </svg>
+);
+
+export const IconLogout = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 2H3a1 1 0 00-1 1v8a1 1 0 001 1h2"/>
+    <path d="M9 10l3-3-3-3"/>
+    <path d="M12 7H5"/>
+  </svg>
+);

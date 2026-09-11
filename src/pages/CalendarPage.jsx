@@ -58,7 +58,7 @@ function AddEventModal({ date, onSave, onClose }) {
   );
 }
 
-export default function CalendarPage({ events, onAddEvent, onDeleteEvent }) {
+export default function CalendarPage({ events, leads, onAddEvent, onDeleteEvent, onToast }) {
   const today = new Date(2026, 8, 11); // Sept 11 2026 — matches app date
   const [currentMonth, setCurrentMonth] = useState(today);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -187,7 +187,7 @@ export default function CalendarPage({ events, onAddEvent, onDeleteEvent }) {
         </div>
       </div>
 
-      {showModal && (
+    {showModal && (
         <AddEventModal
           date={selectedDate}
           onSave={(ev) => {

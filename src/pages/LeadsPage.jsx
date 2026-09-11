@@ -8,7 +8,7 @@ function stageBadgeClass(stage) {
   return `badge badge-stage-${stage}`;
 }
 
-export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead }) {
+export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead, onToast }) {
   const [search, setSearch] = useState('');
   const [filterStage, setFilterStage] = useState('all');
   const [filterSP, setFilterSP] = useState('all');
@@ -161,6 +161,7 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
           onEdit={(lead) => { setEditLead(lead); setShowModal(true); setSelectedLead(null); }}
           onDelete={onDeleteLead}
           onEmailSent={(e) => console.log('Email queued:', e)}
+          onToast={onToast}
         />
       )}
     </div>
