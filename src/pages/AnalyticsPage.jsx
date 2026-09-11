@@ -2,15 +2,12 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { SALESPERSONS, PIPELINE_STAGES, monthlyRevenueData, leadSourceData, stageConversionData } from '../data/mockData';
+import { PIPELINE_STAGES, monthlyRevenueData, leadSourceData } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { formatINR, formatINRCompact } from '../lib/format';
 
 const CHART_COLORS = ['#171717', '#4d4d4d', '#8f8f8f', '#0070f3', '#7928ca', '#50e3c2'];
 const SOURCE_COLORS = ['#171717', '#0070f3', '#7928ca', '#50e3c2', '#f5a623', '#ee0000'];
-
-function formatGBP(v) {
-  if (v >= 1000) return `£${(v / 1000).toFixed(0)}k`;
-  return `£${v}`;
-}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -29,7 +26,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
           <span style={{ textTransform: 'capitalize' }}>{p.name}:</span>
           <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>
-            {typeof p.value === 'number' && p.name !== 'count' ? `£${p.value.toLocaleString()}` : p.value}
+            {typeof p.value === 'number' && p.name !== 'count' ? formatINR(p.value) : p.value}
           </span>
         </div>
       ))}
@@ -37,7 +34,12 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-export default function AnalyticsPage({ leads }) {
+export default function AnalyticsPage({ leads, isAdmin }) {
+  const { teamMembers } = useAuth();
+
+  const spMap = {};
+  (teamMembers ?? []).forEach(m => { if (m.salespersonId) spMap[m.salespersonId] = m; });
+  const spList = (teamMembers ?? []).filter(m => m.salespersonId);
   const totalLeads = leads.length;
   const wonLeads = leads.filter(l => l.stage === 'won');
   const lostLeads = leads.filter(l => l.stage === 'lost');
@@ -47,18 +49,20 @@ export default function AnalyticsPage({ leads }) {
   const conversionRate = totalLeads > 0 ? ((wonLeads.length / totalLeads) * 100).toFixed(0) : 0;
   const avgDeal = wonLeads.length > 0 ? Math.round(totalRevenue / wonLeads.length) : 0;
 
-  // Per-salesperson stats
-  const spStats = SALESPERSONS.map(sp => {
-    const spLeads = leads.filter(l => l.salesperson === sp.id);
-    const spWon = spLeads.filter(l => l.stage === 'won');
-    const spRevenue = spWon.reduce((sum, l) => sum + l.expectedRevenue, 0);
-    const spPipeline = spLeads.filter(l => !['won', 'lost'].includes(l.stage)).reduce((sum, l) => sum + l.expectedRevenue, 0);
+  // Per-salesperson stats from real team members
+  const spStats = spList.map(member => {
+    const spLeads  = leads.filter(l => l.salesperson === member.salespersonId);
+    const spWon    = spLeads.filter(l => l.stage === 'won');
+    const spRevenue  = spWon.reduce((s, l) => s + l.expectedRevenue, 0);
+    const spPipeline = spLeads.filter(l => !['won','lost'].includes(l.stage)).reduce((s,l) => s + l.expectedRevenue, 0);
     return {
-      ...sp,
-      total: spLeads.length,
-      won: spWon.length,
-      revenue: spRevenue,
-      pipeline: spPipeline,
+      id:         member.salespersonId,
+      name:       member.name,
+      initials:   member.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+      total:      spLeads.length,
+      won:        spWon.length,
+      revenue:    spRevenue,
+      pipeline:   spPipeline,
       conversion: spLeads.length > 0 ? Math.round((spWon.length / spLeads.length) * 100) : 0,
     };
   });
@@ -89,18 +93,18 @@ export default function AnalyticsPage({ leads }) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Revenue won</div>
-              <div className="stat-value">£{(totalRevenue / 1000).toFixed(1)}k</div>
+              <div className="stat-value">{formatINRCompact(totalRevenue)}</div>
               <div className="stat-sub">{wonLeads.length} deals closed</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Pipeline value</div>
-              <div className="stat-value">£{(pipelineValue / 1000).toFixed(1)}k</div>
+              <div className="stat-value">{formatINRCompact(pipelineValue)}</div>
               <div className="stat-sub">{activeLeads.length} open deals</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Conversion rate</div>
               <div className="stat-value">{conversionRate}%</div>
-              <div className="stat-sub">Avg deal £{avgDeal.toLocaleString()}</div>
+              <div className="stat-sub">Avg deal {formatINR(avgDeal)}</div>
             </div>
           </div>
 
@@ -122,7 +126,7 @@ export default function AnalyticsPage({ leads }) {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ebebeb" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#8f8f8f' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={formatGBP} tick={{ fontSize: 11, fill: '#8f8f8f' }} axisLine={false} tickLine={false} width={44} />
+                  <YAxis tickFormatter={formatINRCompact} tick={{ fontSize: 11, fill: '#8f8f8f' }} axisLine={false} tickLine={false} width={52} />
                   <Tooltip content={<CustomTooltip />} />
                   <Area type="monotone" dataKey="won" name="won" stroke="#171717" strokeWidth={1.5} fill="url(#wonGrad)" />
                   <Area type="monotone" dataKey="pipeline" name="pipeline" stroke="#0070f3" strokeWidth={1.5} fill="url(#pipeGrad)" />
@@ -182,7 +186,7 @@ export default function AnalyticsPage({ leads }) {
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: row.color, flexShrink: 0 }} />
                     <div style={{ flex: 1, fontSize: 13, color: 'var(--color-body)' }}>{row.label}</div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-ink)' }}>{row.count} leads</div>
-                    <div style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--color-mute)', width: 72, textAlign: 'right' }}>£{row.value.toLocaleString()}</div>
+                    <div style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--color-mute)', width: 80, textAlign: 'right' }}>{formatINR(row.value)}</div>
                   </div>
                 ))}
                 <div style={{ marginTop: 'var(--sp-md)', borderTop: '1px solid var(--color-hairline)', paddingTop: 'var(--sp-md)' }}>
@@ -205,7 +209,7 @@ export default function AnalyticsPage({ leads }) {
               {spStats.map(sp => (
                 <div key={sp.id} className="sp-card">
                   <div className="sp-card-header">
-                    <div className="avatar avatar-md">{sp.avatar}</div>
+                    <div className="avatar avatar-md">{sp.initials}</div>
                     <div>
                       <div className="sp-card-name">{sp.name}</div>
                       <div className="sp-card-role">Sales representative</div>
@@ -226,7 +230,7 @@ export default function AnalyticsPage({ leads }) {
                     </div>
                     <div style={{ gridColumn: 'span 3', marginTop: 'var(--sp-xs)', paddingTop: 'var(--sp-xs)', borderTop: '1px solid var(--color-hairline)' }}>
                       <div className="sp-stat-label">Revenue won</div>
-                      <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-ink)', letterSpacing: '-0.3px', fontFamily: 'var(--font-mono)' }}>£{sp.revenue.toLocaleString()}</div>
+                      <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-ink)', letterSpacing: '-0.3px', fontFamily: 'var(--font-mono)' }}>{formatINR(sp.revenue)}</div>
                     </div>
                   </div>
                 </div>

@@ -1,11 +1,22 @@
 import { useState, useMemo } from 'react';
 import { PIPELINE_STAGES, LEAD_SOURCES, TREATMENTS } from '../data/mockData';
+import { COUNTRY_CODES } from '../lib/format';
 import { useAuth } from '../context/AuthContext';
 import { IconX } from './Icons';
 
 export default function LeadModal({ lead, onSave, onClose }) {
   const { isAdmin, salespersonId, session, teamMembers } = useAuth();
   const isEdit = !!lead;
+
+  // Parse stored phone into dialCode + number parts
+  function parsePhone(stored) {
+    if (!stored) return { dialCode: '+91', number: '' };
+    const match = COUNTRY_CODES.find(c => stored.startsWith(c.code));
+    if (match) return { dialCode: match.code, number: stored.slice(match.code.length).trim() };
+    return { dialCode: '+91', number: stored };
+  }
+
+  const parsedPhone = parsePhone(lead?.phone);
 
   // Build salesperson options from real team members who have a salespersonId assigned
   // Each entry: { id: "sp1" (or email), name: "Sarah", initials: "SM" }
@@ -37,16 +48,24 @@ export default function LeadModal({ lead, onSave, onClose }) {
     source:          LEAD_SOURCES[0],
     notes:           '',
     priority:        'medium',
-    ...(lead ?? {}),  // spread existing lead data when editing
+    ...(lead ?? {}),
   }));
+
+  // Phone is stored as combined string e.g. "+91 98765 43210"
+  // We split it into dialCode + number for the UI
+  const [dialCode, setDialCode] = useState(parsedPhone.dialCode);
+  const [phoneNumber, setPhoneNumber] = useState(parsedPhone.number);
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name || !form.email) return;
+    // Combine dial code + number into single phone string
+    const combinedPhone = phoneNumber ? `${dialCode} ${phoneNumber}` : '';
     onSave({
       ...form,
+      phone:           combinedPhone,
       salesperson:     isAdmin ? form.salesperson : (salespersonId ?? form.salesperson),
       id:              lead?.id ?? `lead-${Date.now()}`,
       createdAt:       lead?.createdAt ?? new Date().toISOString().slice(0, 10),
@@ -85,13 +104,49 @@ export default function LeadModal({ lead, onSave, onClose }) {
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="lead-phone">Phone</label>
-                <input id="lead-phone" className="text-input" value={form.phone}
-                  onChange={e => set('phone', e.target.value)} placeholder="+44 7700 000000" />
+                <div className="phone-field">
+                  <select
+                    className="select phone-dial-select"
+                    value={dialCode}
+                    onChange={e => setDialCode(e.target.value)}
+                    aria-label="Country code"
+                  >
+                    {COUNTRY_CODES.map((c, i) => (
+                      <option key={`${c.code}-${c.name}`} value={c.code}>
+                        {c.flag} {c.code} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    id="lead-phone"
+                    className="text-input phone-number-input"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={e => {
+                      // Only allow digits, spaces, hyphens
+                      const val = e.target.value.replace(/[^\d\s\-]/g, '');
+                      setPhoneNumber(val);
+                    }}
+                    placeholder="98765 43210"
+                    inputMode="numeric"
+                  />
+                </div>
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="lead-revenue">Expected revenue (£)</label>
-                <input id="lead-revenue" className="text-input" type="number" min="0"
-                  value={form.expectedRevenue} onChange={e => set('expectedRevenue', e.target.value)} placeholder="0" />
+                <label className="form-label" htmlFor="lead-revenue">Expected revenue (₹)</label>
+                <input
+                  id="lead-revenue"
+                  className="text-input"
+                  type="text"
+                  inputMode="numeric"
+                  value={form.expectedRevenue}
+                  onChange={e => {
+                    // Only allow digits
+                    const val = e.target.value.replace(/\D/g, '');
+                    set('expectedRevenue', val);
+                  }}
+                  placeholder="e.g. 50000"
+                />
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { PIPELINE_STAGES } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../lib/format';
 import LeadModal from '../components/LeadModal';
 import LeadDetailPanel from '../components/LeadDetailPanel';
 import { IconPlus, IconSearch, IconFilter } from '../components/Icons';
@@ -72,7 +73,7 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
       <div className="page-header">
         <div>
           <div className="page-title">Leads</div>
-          <div className="page-subtitle">{filtered.length} lead{filtered.length !== 1 ? 's' : ''} · £{totalRevenue.toLocaleString()} pipeline value</div>
+          <div className="page-subtitle">{filtered.length} lead{filtered.length !== 1 ? 's' : ''} · {formatINR(totalRevenue)} pipeline value</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setEditLead(null); setShowModal(true); }}>
           <IconPlus /> Add lead
@@ -135,7 +136,7 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
                       </td>
                       <td><span className="td-email">{lead.email}</span></td>
                       <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.treatment}</td>
-                      <td><span className="td-mono">£{lead.expectedRevenue.toLocaleString()}</span></td>
+                      <td><span className="td-mono">{formatINR(lead.expectedRevenue)}</span></td>
                       <td><span className={stageBadgeClass(lead.stage)}>{PIPELINE_STAGES.find(s => s.id === lead.stage)?.label}</span></td>
                       <td>
                         <div className="flex items-center gap-xs">

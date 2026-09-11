@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PIPELINE_STAGES } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../lib/format';
 import { IconX, IconMail, IconSend, IconEdit, IconTrash, IconPhone } from './Icons';
 
 export default function LeadDetailPanel({ lead, onClose, onStageChange, onEdit, onDelete, onEmailSent, onToast }) {
@@ -132,7 +133,7 @@ export default function LeadDetailPanel({ lead, onClose, onStageChange, onEdit, 
             <div className="detail-row">
               <div className="detail-row-label">Expected revenue</div>
               <div className="detail-row-value" style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 16 }}>
-                £{lead.expectedRevenue.toLocaleString()}
+                {formatINR(lead.expectedRevenue)}
               </div>
             </div>
             <div className="detail-row">

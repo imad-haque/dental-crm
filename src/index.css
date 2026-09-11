@@ -1655,3 +1655,20 @@ tbody td {
   0%   { background-position: -100% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* ── Phone field with country code dropdown ─────────────── */
+.phone-field {
+  display: flex;
+  gap: var(--sp-xs);
+}
+
+.phone-dial-select {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.phone-number-input {
+  flex: 1;
+  min-width: 0;
+}

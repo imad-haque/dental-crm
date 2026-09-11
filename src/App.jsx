@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { useLeads } from './hooks/useLeads';
 import { useEvents } from './hooks/useEvents';
+import { formatINR } from './lib/format';
 import LeadsPage from './pages/LeadsPage';
 import PipelinePage from './pages/PipelinePage';
 import CalendarPage from './pages/CalendarPage';
@@ -262,7 +263,7 @@ function CRMApp() {
                       <div style={{ fontSize: 11, color: 'var(--color-mute)' }}>{lead.treatment}</div>
                     </div>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-mute)' }}>
-                      £{lead.expectedRevenue.toLocaleString()}
+                      {formatINR(lead.expectedRevenue)}
                     </span>
                   </button>
                 ))}

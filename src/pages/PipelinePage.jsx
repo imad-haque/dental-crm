@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PIPELINE_STAGES } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../lib/format';
 import LeadModal from '../components/LeadModal';
 import LeadDetailPanel from '../components/LeadDetailPanel';
 import { IconPlus, IconKanban, IconList, IconSearch } from '../components/Icons';
@@ -27,7 +28,7 @@ function KanbanView({ leads, onDragEnd, onCardClick, spMap }) {
               <div className="flex items-center gap-xs">
                 {grouped[stage.id].length > 0 && (
                   <span style={{ fontSize: 11, color: 'var(--color-mute)', fontFamily: 'var(--font-mono)' }}>
-                    £{grouped[stage.id].reduce((s, l) => s + l.expectedRevenue, 0).toLocaleString()}
+                    {formatINR(grouped[stage.id].reduce((s, l) => s + l.expectedRevenue, 0))}
                   </span>
                 )}
                 <span className="kanban-col-count">{grouped[stage.id].length}</span>
@@ -54,7 +55,7 @@ function KanbanView({ leads, onDragEnd, onCardClick, spMap }) {
                             <div className="kanban-card-name">{lead.name}</div>
                             <div className="kanban-card-treatment">{lead.treatment}</div>
                             <div className="kanban-card-footer">
-                              <span className="kanban-revenue">£{lead.expectedRevenue.toLocaleString()}</span>
+                              <span className="kanban-revenue">{formatINR(lead.expectedRevenue)}</span>
                               <div className="flex items-center gap-xs">
                                 <span className={`badge badge-priority-${lead.priority}`} style={{ textTransform: 'capitalize', fontSize: 10 }}>{lead.priority}</span>
                                 <span className="avatar avatar-sm">
@@ -112,7 +113,7 @@ function ListView({ leads, onRowClick, spMap }) {
                 </td>
                 <td><span className="td-email">{lead.email}</span></td>
                 <td>{lead.treatment}</td>
-                <td><span className="td-mono">£{lead.expectedRevenue.toLocaleString()}</span></td>
+                <td><span className="td-mono">{formatINR(lead.expectedRevenue)}</span></td>
                 <td><span className={stageBadgeClass(lead.stage)}>{PIPELINE_STAGES.find(s => s.id === lead.stage)?.label}</span></td>
                 <td>
                   <div className="flex items-center gap-xs">
@@ -169,7 +170,7 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
       <div className="page-header">
         <div>
           <div className="page-title">Pipeline</div>
-          <div className="page-subtitle">£{totalPipeline.toLocaleString()} active · £{totalWon.toLocaleString()} won</div>
+          <div className="page-subtitle">{formatINR(totalPipeline)} active · {formatINR(totalWon)} won</div>
         </div>
         <div className="flex items-center gap-xs">
           <div className="subtabs">
