@@ -1641,3 +1641,17 @@ tbody td {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Firestore sync loading bar ─────────────────────────── */
+.firestore-loading-bar {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-ink), transparent);
+  background-size: 200% 100%;
+  animation: loadingSlide 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes loadingSlide {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}

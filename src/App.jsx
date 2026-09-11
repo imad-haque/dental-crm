@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './components/Toast';
-import { initialLeads, initialCalendarEvents } from './data/mockData';
+import { useLeads } from './hooks/useLeads';
+import { useEvents } from './hooks/useEvents';
 import LeadsPage from './pages/LeadsPage';
 import PipelinePage from './pages/PipelinePage';
 import CalendarPage from './pages/CalendarPage';
@@ -102,10 +103,16 @@ function CRMApp() {
   const { session, isAdmin, salespersonId, signOut } = useAuth();
 
   const [activeTab, setActiveTab] = useState('leads');
-  const [leads, setLeads] = useState(initialLeads);
-  const [events, setEvents] = useState(initialCalendarEvents);
   const [globalSearch, setGlobalSearch] = useState('');
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+
+  // ── Firestore-backed data ───────────────────────────────────────────────
+  const {
+    leads, leadsReady,
+    addLead: fsAddLead, updateLead: fsUpdateLead, deleteLead: fsDeleteLead,
+  } = useLeads();
+
+  const { events, addEvent, deleteEvent } = useEvents();
 
   // ── Scope: non-admins only see their own leads ──────────────────────────
   const visibleLeads = useMemo(() => {
@@ -114,28 +121,35 @@ function CRMApp() {
   }, [leads, isAdmin, salespersonId]);
 
   // ── Lead CRUD with RBAC guards ──────────────────────────────────────────
-  const addLead = (lead) => {
-    // For non-admins, always force their own salespersonId
+  const addLead = async (lead) => {
     const safeLead = isAdmin ? lead : { ...lead, salesperson: salespersonId };
-    setLeads(prev => [safeLead, ...prev]);
-    toast(`${safeLead.name} added to leads`);
+    try {
+      await fsAddLead(safeLead);
+      toast(`${safeLead.name} added to leads`);
+    } catch (err) {
+      console.error(err);
+      toast('Failed to save lead', 'error');
+    }
   };
 
-  const updateLead = (updated) => {
-    // Gate: non-admin can only update their own leads
+  const updateLead = async (updated) => {
     if (!isAdmin) {
       const existing = leads.find(l => l.id === updated.id);
       if (!existing || existing.salesperson !== salespersonId) {
         toast('You can only edit your own leads', 'error');
         return;
       }
-      // Prevent ownership reassignment
       updated = { ...updated, salesperson: salespersonId };
     }
-    setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
+    try {
+      await fsUpdateLead(updated);
+    } catch (err) {
+      console.error(err);
+      toast('Failed to update lead', 'error');
+    }
   };
 
-  const deleteLead = (id) => {
+  const deleteLead = async (id) => {
     if (!isAdmin) {
       const existing = leads.find(l => l.id === id);
       if (!existing || existing.salesperson !== salespersonId) {
@@ -144,22 +158,37 @@ function CRMApp() {
       }
     }
     const lead = leads.find(l => l.id === id);
-    setLeads(prev => prev.filter(l => l.id !== id));
-    toast(`${lead?.name} removed`, 'error');
+    try {
+      await fsDeleteLead(id);
+      toast(`${lead?.name} removed`, 'error');
+    } catch (err) {
+      console.error(err);
+      toast('Failed to delete lead', 'error');
+    }
   };
 
   // ── Calendar CRUD ───────────────────────────────────────────────────────
-  const addEvent = (dateKey, event) => {
-    setEvents(prev => ({ ...prev, [dateKey]: [...(prev[dateKey] || []), event] }));
-    toast(`Event added: ${event.title}`);
+  const handleAddEvent = async (dateKey, event) => {
+    try {
+      await addEvent(dateKey, event);
+      toast(`Event added: ${event.title}`);
+    } catch (err) {
+      console.error(err);
+      toast('Failed to save event', 'error');
+    }
   };
 
-  const deleteEvent = (dateKey, eventId) => {
-    setEvents(prev => ({ ...prev, [dateKey]: (prev[dateKey] || []).filter(e => e.id !== eventId) }));
-    toast('Event removed', 'error');
+  const handleDeleteEvent = async (dateKey, eventId) => {
+    try {
+      await deleteEvent(dateKey, eventId);
+      toast('Event removed', 'error');
+    } catch (err) {
+      console.error(err);
+      toast('Failed to delete event', 'error');
+    }
   };
 
-  // ── Derived stats for nav pill ──────────────────────────────────────────
+  // ── Nav stats ───────────────────────────────────────────────────────────
   const wonCount      = visibleLeads.filter(l => l.stage === 'won').length;
   const pipelineCount = visibleLeads.filter(l => !['won', 'lost'].includes(l.stage)).length;
 
@@ -172,11 +201,11 @@ function CRMApp() {
       ).slice(0, 6)
     : [];
 
-  // Visible tabs — non-admins don't see Team tab
   const visibleTabs = TABS.filter(t => !t.adminOnly || isAdmin);
-
-  // If active tab is team and user is no longer admin, reset
   if (activeTab === 'team' && !isAdmin) setActiveTab('leads');
+
+  // Show a subtle loading indicator while Firestore hydrates
+  const isLoading = !leadsReady;
 
   return (
     <div className="app">
@@ -252,6 +281,9 @@ function CRMApp() {
         </div>
       </nav>
 
+      {/* Thin loading bar while Firestore hydrates */}
+      {isLoading && <div className="firestore-loading-bar" />}
+
       {/* ── Page content ────────────────────────────────────────────── */}
       <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {activeTab === 'leads' && (
@@ -276,8 +308,8 @@ function CRMApp() {
           <CalendarPage
             events={events}
             leads={visibleLeads}
-            onAddEvent={addEvent}
-            onDeleteEvent={deleteEvent}
+            onAddEvent={handleAddEvent}
+            onDeleteEvent={handleDeleteEvent}
             onToast={toast}
           />
         )}
