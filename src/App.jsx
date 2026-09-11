@@ -294,9 +294,9 @@ function CRMApp() {
 
 // ── Root — providers + auth gate ──────────────────────────────────────────
 function Root() {
-  const { isLoggedIn, loading } = useAuth();
+  const { isLoggedIn, connecting } = useAuth();
 
-  if (loading) {
+  if (connecting) {
     return (
       <div style={{
         height: '100vh', display: 'flex', flexDirection: 'column',

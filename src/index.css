@@ -1627,3 +1627,17 @@ tbody td {
   .login-brand { display: none; }
   .login-panel { width: 100%; }
 }
+
+/* ── Sign-in spinner ────────────────────────────────────── */
+.login-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-hairline);
+  border-top-color: var(--color-ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

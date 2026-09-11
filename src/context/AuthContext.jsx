@@ -1,54 +1,47 @@
 /**
  * AuthContext — Firestore-backed team registry
  *
- * Team members are stored in Firestore collection "team", one doc per member,
- * keyed by sanitised email (dots replaced with underscores so Firestore accepts it).
+ * Firestore collection: "team"
+ * Document ID: emailToKey(email)  — dots→underscore, @→__at__
  *
  * Doc shape:
- *  {
- *    email:         "sarah@gmail.com",
- *    name:          "Sarah Mitchell",
- *    role:          "admin" | "user",
- *    salespersonId: "sp1" | "sp2" | "sp3" | "sp4" | null,
- *    addedAt:       "2026-09-11",
- *    isOwner:       true | false,
- *  }
+ *  { email, name, role, salespersonId, addedAt, isOwner }
  *
- * Session (who is currently logged in) is kept in sessionStorage so it
- * survives page refreshes but NOT incognito isolation — which is exactly
- * what we want: each browser context signs in independently.
+ * Session lives in sessionStorage — survives page refresh,
+ * isolated per browser context (incognito gets its own session).
  */
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-// ── JWT decode ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
 function decodeJwt(token) {
   try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64));
-  } catch {
-    return null;
-  }
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(b64));
+  } catch { return null; }
 }
 
-// ── Firestore key: sanitise email for use as doc ID ───────────────────────
-function emailToKey(email) {
-  return email.trim().toLowerCase().replace(/\./g, '_').replace(/@/g, '__at__');
+// Firestore doc ID from email — must be stable and URL-safe
+export function emailToKey(email) {
+  return email.trim().toLowerCase()
+    .replace(/\./g, '_DOT_')
+    .replace(/@/g, '_AT_');
 }
 
-// ── Session stored in sessionStorage (survives refresh, not incognito) ────
-const SESSION_KEY = 'crm_session';
+// ── Session (sessionStorage — per-tab, not shared with incognito) ─────────
+const SESSION_KEY = 'crm_session_v2';
 
 function loadSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) ?? null; }
+  catch { return null; }
 }
 function saveSession(s) {
   if (s) sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
-  else sessionStorage.removeItem(SESSION_KEY);
+  else   sessionStorage.removeItem(SESSION_KEY);
 }
 
 // ── Context ───────────────────────────────────────────────────────────────
@@ -56,84 +49,117 @@ const AuthContext = createContext(null);
 export function useAuth() { return useContext(AuthContext); }
 
 export function AuthProvider({ children }) {
-  const [session, setSession]         = useState(loadSession);
+  const [session,     setSession]     = useState(loadSession);
   const [teamMembers, setTeamMembers] = useState([]);
-  const [authError, setAuthError]     = useState(null);
-  const [loading, setLoading]         = useState(true); // waiting for Firestore
+  const [authError,   setAuthError]   = useState(null);
+  const [authLoading, setAuthLoading] = useState(false); // spinner during sign-in only
+  // Only show full-page "Connecting" if there is NO existing session
+  const [connecting,  setConnecting]  = useState(() => loadSession() === null);
 
-  // ── Real-time team listener ───────────────────────────────────────────
+  const teamReadyRef = useRef(false); // true once we have a confirmed Firestore snapshot
+
+  // ── Firestore real-time listener ──────────────────────────────────────
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'team'), (snap) => {
-      const members = snap.docs.map(d => d.data());
-      setTeamMembers(members);
-      setLoading(false);
+    const timeout = setTimeout(() => {
+      // Hard cap: never block login screen longer than 6s
+      setConnecting(false);
+    }, 6000);
 
-      // If the signed-in user's record was updated remotely, refresh session
-      setSession(prev => {
-        if (!prev) return prev;
-        const updated = members.find(m => m.email.toLowerCase() === prev.email.toLowerCase());
-        if (!updated) return prev; // member was deleted — keep session until next action
-        const next = { ...prev, role: updated.role, salespersonId: updated.salesperson ?? updated.salespersonId ?? null };
-        saveSession(next);
-        return next;
-      });
-    }, (err) => {
-      console.error('Firestore team listener error:', err);
-      setLoading(false);
-    });
-    return unsub;
+    const unsub = onSnapshot(
+      collection(db, 'team'),
+      (snap) => {
+        clearTimeout(timeout);
+        teamReadyRef.current = true;
+        const members = snap.docs.map(d => d.data());
+        setTeamMembers(members);
+        setConnecting(false);
+
+        // Keep session in sync if admin changed this user's role remotely
+        setSession(prev => {
+          if (!prev) return prev;
+          const fresh = members.find(
+            m => m.email.toLowerCase() === prev.email.toLowerCase()
+          );
+          if (!fresh) return prev; // deleted — keep until they act
+          const next = { ...prev, role: fresh.role, salespersonId: fresh.salespersonId ?? null };
+          saveSession(next);
+          return next;
+        });
+      },
+      (err) => {
+        clearTimeout(timeout);
+        console.error('Firestore listener error:', err);
+        setConnecting(false);
+      }
+    );
+
+    return () => { clearTimeout(timeout); unsub(); };
   }, []);
 
   // ── Sign-in ───────────────────────────────────────────────────────────
   const handleGoogleSuccess = useCallback(async (credentialResponse) => {
     const payload = decodeJwt(credentialResponse.credential);
-    if (!payload) { setAuthError('Failed to read Google sign-in. Please try again.'); return; }
+    if (!payload) {
+      setAuthError('Could not read Google credentials. Please try again.');
+      return;
+    }
 
     const { email, name, picture } = payload;
+    const emailLower = email.trim().toLowerCase();
     setAuthError(null);
+    setAuthLoading(true);
 
     try {
-      const teamSnap = await getDocs(collection(db, 'team'));
-      const isFirstUser = teamSnap.empty;
+      // Always look up the specific doc first — never rely on collection emptiness
+      const memberRef  = doc(db, 'team', emailToKey(emailLower));
+      const memberSnap = await getDoc(memberRef);
 
-      if (isFirstUser) {
-        // Bootstrap: first sign-in becomes owner-admin
-        const ownerDoc = {
-          email: email.toLowerCase(),
-          name,
-          role: 'admin',
-          salespersonId: 'sp1',
-          addedAt: new Date().toISOString().slice(0, 10),
-          isOwner: true,
+      if (memberSnap.exists()) {
+        // Known member — sign them in with their stored role
+        const member = memberSnap.data();
+        const newSession = {
+          email:         member.email,
+          name:          member.name || name,
+          picture,
+          role:          member.role,
+          salespersonId: member.salespersonId ?? null,
+          isOwner:       !!member.isOwner,
         };
-        await setDoc(doc(db, 'team', emailToKey(email)), ownerDoc);
-        const newSession = { email: email.toLowerCase(), name, picture, role: 'admin', salespersonId: 'sp1', isOwner: true };
         saveSession(newSession);
         setSession(newSession);
         return;
       }
 
-      // Look up this email in Firestore
-      const memberSnap = await getDoc(doc(db, 'team', emailToKey(email)));
-      if (!memberSnap.exists()) {
-        setAuthError(`${email} has not been added to this CRM. Ask your admin to add you.`);
-        return;
-      }
+      // Unknown member — check if the team collection has ANY docs
+      // (to decide whether this is the bootstrap first-user)
+      const teamSnap   = await getDocs(collection(db, 'team'));
+      const isFirstUser = teamSnap.empty;
 
-      const member = memberSnap.data();
-      const newSession = {
-        email:         member.email,
-        name:          member.name || name,
-        picture,
-        role:          member.role,
-        salespersonId: member.salespersonId ?? null,
-        isOwner:       !!member.isOwner,
-      };
-      saveSession(newSession);
-      setSession(newSession);
+      if (isFirstUser) {
+        // Bootstrap: nobody exists yet → this person becomes owner-admin
+        const ownerDoc = {
+          email:         emailLower,
+          name:          name,
+          role:          'admin',
+          salespersonId: 'sp1',
+          addedAt:       new Date().toISOString().slice(0, 10),
+          isOwner:       true,
+        };
+        await setDoc(memberRef, ownerDoc);
+        const newSession = { ...ownerDoc, picture };
+        saveSession(newSession);
+        setSession(newSession);
+      } else {
+        // Team exists but this email wasn't invited
+        setAuthError(
+          `${email} hasn't been added to this CRM. Ask your admin to add you from the Team tab.`
+        );
+      }
     } catch (err) {
       console.error('Sign-in error:', err);
-      setAuthError('Sign-in failed. Check your connection and try again.');
+      setAuthError('Sign-in failed — could not reach the database. Check your connection and try again.');
+    } finally {
+      setAuthLoading(false);
     }
   }, []);
 
@@ -147,17 +173,18 @@ export function AuthProvider({ children }) {
     setAuthError(null);
   }, []);
 
-  // ── Team management ───────────────────────────────────────────────────
+  // ── Team management (admin only) ──────────────────────────────────────
   const addTeamMember = useCallback(async ({ email, name, role, salespersonId }) => {
-    const memberDoc = {
-      email:         email.trim().toLowerCase(),
+    const emailLower = email.trim().toLowerCase();
+    const memberDoc  = {
+      email:         emailLower,
       name:          name.trim(),
       role,
       salespersonId: salespersonId || null,
       addedAt:       new Date().toISOString().slice(0, 10),
       isOwner:       false,
     };
-    await setDoc(doc(db, 'team', emailToKey(email)), memberDoc);
+    await setDoc(doc(db, 'team', emailToKey(emailLower)), memberDoc);
   }, []);
 
   const updateTeamMember = useCallback(async (email, updates) => {
@@ -170,6 +197,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
+      // Session
       session,
       isLoggedIn:    !!session,
       isAdmin:       session?.role === 'admin',
@@ -177,18 +205,22 @@ export function AuthProvider({ children }) {
       role:          session?.role ?? null,
       salespersonId: session?.salespersonId ?? null,
 
+      // Auth actions
       handleGoogleSuccess,
       handleGoogleError,
       signOut,
       authError,
+      authLoading,
       clearAuthError: () => setAuthError(null),
 
+      // Team
       teamMembers,
       addTeamMember,
       updateTeamMember,
       removeTeamMember,
 
-      loading, // true while initial Firestore fetch is in flight
+      // Loading states
+      connecting, // full-page "Connecting" screen (no session yet)
     }}>
       {children}
     </AuthContext.Provider>

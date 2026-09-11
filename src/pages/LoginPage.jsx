@@ -3,11 +3,17 @@ import { useAuth } from '../context/AuthContext';
 import { IconTooth } from '../components/Icons';
 
 export default function LoginPage() {
-  const { handleGoogleSuccess, handleGoogleError, authError, clearAuthError } = useAuth();
+  const {
+    handleGoogleSuccess,
+    handleGoogleError,
+    authError,
+    authLoading,
+    clearAuthError,
+  } = useAuth();
 
   return (
     <div className="login-shell">
-      {/* Left panel — branding */}
+      {/* ── Left branding panel ─────────────────────────────────── */}
       <div className="login-brand">
         <div className="login-brand-inner">
           <div className="login-logo">
@@ -31,8 +37,6 @@ export default function LoginPage() {
             ))}
           </ul>
         </div>
-
-        {/* Gradient mesh — hero decoration from DESIGN.md */}
         <div className="login-mesh" aria-hidden="true">
           <div className="mesh-blob mesh-blob-1" />
           <div className="mesh-blob mesh-blob-2" />
@@ -40,20 +44,20 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right panel — sign-in form */}
+      {/* ── Right sign-in panel ──────────────────────────────────── */}
       <div className="login-panel">
         <div className="login-card">
           <div className="login-card-header">
             <h1 className="login-card-title">Sign in</h1>
             <p className="login-card-sub">
-              Use the Gmail account your admin has registered for you.
+              Use the Gmail address your admin has registered for you.
             </p>
           </div>
 
           {authError && (
             <div className="login-error" role="alert">
               <div className="login-error-icon">!</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div className="login-error-title">Access denied</div>
                 <div className="login-error-body">{authError}</div>
               </div>
@@ -61,28 +65,39 @@ export default function LoginPage() {
                 className="login-error-dismiss"
                 onClick={clearAuthError}
                 aria-label="Dismiss error"
-              >
-                ×
-              </button>
+              >×</button>
             </div>
           )}
 
-          <div className="login-google-wrap">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              useOneTap={false}
-              text="signin_with"
-              shape="rectangular"
-              theme="outline"
-              size="large"
-              width="320"
-            />
-          </div>
+          {authLoading ? (
+            /* Shown while we wait for Firestore to resolve the role */
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 'var(--sp-sm)', padding: 'var(--sp-xl) 0',
+            }}>
+              <div className="login-spinner" aria-label="Signing in…" />
+              <div style={{ fontSize: 13, color: 'var(--color-mute)' }}>
+                Verifying your account…
+              </div>
+            </div>
+          ) : (
+            <div className="login-google-wrap">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap={false}
+                text="signin_with"
+                shape="rectangular"
+                theme="outline"
+                size="large"
+                width="320"
+              />
+            </div>
+          )}
 
           <p className="login-note">
             Only team members added by an admin can sign in.<br />
-            The first person to sign in becomes the admin.
+            The first person to sign in becomes the admin automatically.
           </p>
         </div>
       </div>
