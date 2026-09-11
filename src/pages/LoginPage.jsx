@@ -18,7 +18,7 @@ export default function LoginPage() {
         <div className="login-brand-inner">
           <div className="login-logo">
             <IconTooth size={32} />
-            <span>DentalCRM</span>
+            <span>Dentixcy CRM</span>
           </div>
           <div className="login-tagline">
             Your practice pipeline,<br />beautifully managed.

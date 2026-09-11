@@ -1,4 +1,4 @@
-// Mock data for Dental CRM
+// Mock data for Dentixcy CRM
 
 export const SALESPERSONS = [
   { id: 'sp1', name: 'Sarah Mitchell', avatar: 'SM' },

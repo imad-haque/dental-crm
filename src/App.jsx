@@ -214,7 +214,7 @@ function CRMApp() {
       <nav className="top-nav" aria-label="Main navigation">
         <div className="nav-logo">
           <IconTooth size={20} />
-          <span>DentalCRM</span>
+          <span>Dentixcy CRM</span>
         </div>
 
         <div className="nav-tabs" role="tablist">
@@ -338,7 +338,7 @@ function Root() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', color: 'var(--color-ink)' }}>
           <IconTooth size={24} />
-          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.4px' }}>DentalCRM</span>
+          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.4px' }}>Dentixcy CRM</span>
         </div>
         <div style={{ fontSize: 13, color: 'var(--color-mute)' }}>Connecting…</div>
       </div>

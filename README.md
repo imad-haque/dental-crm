@@ -1,4 +1,4 @@
-# DentalCRM
+# Dentixcy CRM
 
 A production-ready CRM system built for dental practices. Manage leads, track your sales pipeline, schedule follow-ups, and monitor team performance — all in one place.
 
