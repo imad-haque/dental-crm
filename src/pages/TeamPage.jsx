@@ -172,10 +172,11 @@ export default function TeamPage() {
   const [saving, setSaving]       = useState(false);
 
   const handleAdd = async (data) => {
+    // Close modal immediately — don't make the user wait for Firestore round-trip
+    setShowAdd(false);
     setSaving(true);
     try {
       await addTeamMember(data);
-      setShowAdd(false);
       toast(`${data.name} added to team`);
     } catch (err) {
       toast('Failed to add member. Check your connection.', 'error');
@@ -185,10 +186,11 @@ export default function TeamPage() {
   };
 
   const handleEdit = async (data) => {
+    // Close modal immediately
+    setEditing(null);
     setSaving(true);
     try {
       await updateTeamMember(editing.email, data);
-      setEditing(null);
       toast(`${data.name} updated`);
     } catch (err) {
       toast('Failed to update member.', 'error');
@@ -322,7 +324,7 @@ export default function TeamPage() {
         <AddMemberModal
           existing={teamMembers}
           onSave={handleAdd}
-          onClose={() => !saving && setShowAdd(false)}
+          onClose={() => setShowAdd(false)}
         />
       )}
 
@@ -330,7 +332,7 @@ export default function TeamPage() {
         <EditMemberModal
           member={editing}
           onSave={handleEdit}
-          onClose={() => !saving && setEditing(null)}
+          onClose={() => setEditing(null)}
         />
       )}
     </div>

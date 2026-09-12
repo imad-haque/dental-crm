@@ -156,8 +156,16 @@ export function AuthProvider({ children }) {
         );
       }
     } catch (err) {
-      console.error('Sign-in error:', err);
-      setAuthError('Sign-in failed — could not reach the database. Check your connection and try again.');
+      console.error('Sign-in error code:', err.code);
+      console.error('Sign-in error message:', err.message);
+      console.error('Sign-in error full:', err);
+      if (err.code === 'permission-denied') {
+        setAuthError('Database permission denied. Check Firestore rules are published (allow read, write: if true).');
+      } else if (err.code === 'unavailable' || err.code === 'failed-precondition') {
+        setAuthError('Database unavailable. Wait 1–2 minutes for Firestore to finish setting up, then try again.');
+      } else {
+        setAuthError(`Sign-in error: ${err.code ?? err.message ?? 'unknown'}. Check the browser console for details.`);
+      }
     } finally {
       setAuthLoading(false);
     }
