@@ -1787,5 +1787,30 @@ tbody td {
   min-width: 0;
 }
 
-/* ── Mobile dropdown filters fix ──────────────────────────── */
+/* ── Responsive filter toolbar fixes ──────────────────────────── */
 @media (max-width: 640px) {
+  .search-wrap {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .search-input {
+    width: 100%;
+  }
+  
+  /* Make filter dropdowns stack nicely on mobile */
+  .select {
+    font-size: 12px;
+    padding: 0 8px;
+    height: 28px;
+    min-width: 90px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .select {
+    font-size: 11px;
+    min-width: 80px !important;
+  }
+}

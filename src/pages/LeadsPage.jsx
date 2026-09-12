@@ -80,8 +80,8 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
         </button>
       </div>
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', padding: 'var(--sp-md) var(--sp-xl)', borderBottom: '1px solid var(--color-hairline)', background: 'var(--color-elevated)', flexShrink: 0 }}>
+            {/* Toolbar */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--sp-sm)', padding: 'var(--sp-md) var(--sp-xl)', borderBottom: '1px solid var(--color-hairline)', background: 'var(--color-elevated)', flexShrink: 0 }}>
         <div className="search-wrap">
           <IconSearch />
           <input
@@ -91,15 +91,17 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <IconFilter size={14} style={{ color: 'var(--color-faint)' }} />
-        <select className="select" value={filterStage} onChange={e => setFilterStage(e.target.value)}>
-          <option value="all">All stages</option>
-          {PIPELINE_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
-        <select className="select" value={filterSP} onChange={e => setFilterSP(e.target.value)}>
-          <option value="all">All salespersons</option>
-          {spList.map(m => <option key={m.salespersonId} value={m.salespersonId}>{m.name}</option>)}
-        </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', flex: '1 1 auto', minWidth: 0 }}>
+          <IconFilter size={14} style={{ color: 'var(--color-faint)', flexShrink: 0 }} />
+          <select className="select" value={filterStage} onChange={e => setFilterStage(e.target.value)} style={{ flex: '1 1 120px', minWidth: '100px' }}>
+            <option value="all">All stages</option>
+            {PIPELINE_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select className="select" value={filterSP} onChange={e => setFilterSP(e.target.value)} style={{ flex: '1 1 140px', minWidth: '120px' }}>
+            <option value="all">All salespersons</option>
+            {spList.map(m => <option key={m.salespersonId} value={m.salespersonId}>{m.name}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Table */}
