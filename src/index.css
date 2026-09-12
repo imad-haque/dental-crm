@@ -1096,6 +1096,20 @@ tbody td {
   .search-input { width: 160px; }
   .nav-tab span { display: none; }
   /* Keep user-menu-info visible on mobile to show role badges */
+  .user-menu-info {
+    display: flex !important;
+    gap: 4px;
+  }
+
+  .user-menu-name {
+    font-size: 12px;
+  }
+
+  .badge-role-admin,
+  .badge-role-user {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
   .nav-logo span { display: none; }
   .page-header { flex-wrap: wrap; gap: var(--sp-sm); }
   .page-title { font-size: 18px; }
@@ -1166,6 +1180,21 @@ tbody td {
   .sp-stats { grid-template-columns: repeat(2, 1fr); }
   .stat-value { font-size: 22px; }
   .login-card-title { font-size: 20px; }
+
+  /* Compact user menu for small phones */
+  .user-menu-info {
+    gap: 3px !important;
+  }
+
+  .user-menu-name {
+    font-size: 11px !important;
+  }
+
+  .badge-role-admin,
+  .badge-role-user {
+    font-size: 9px !important;
+    padding: 2px 5px !important;
+  }
   .login-tagline { font-size: 24px; }
   .login-features li { font-size: 13px; }
   .team-explainer-row { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -1815,39 +1844,4 @@ tbody td {
   }
 }
 
-/* ── User menu responsive styling ──────────────────────────── */
-@media (max-width: 768px) {
-  .user-menu-info {
-    gap: 4px;
-  }
-  
-  .user-menu-name {
-    font-size: 12px;
-  }
-  
-  .badge-role-admin,
-  .badge-role-user {
-    font-size: 10px;
-    padding: 2px 6px;
-  }
-}
 
-@media (max-width: 640px) {
-  .user-menu-trigger {
-    gap: 6px;
-  }
-  
-  .user-menu-info {
-    gap: 3px;
-  }
-  
-  .user-menu-name {
-    font-size: 11px;
-  }
-  
-  .badge-role-admin,
-  .badge-role-user {
-    font-size: 9px;
-    padding: 2px 5px;
-  }
-}
