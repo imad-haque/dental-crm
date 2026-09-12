@@ -1095,7 +1095,6 @@ tbody td {
   .stats-row { grid-template-columns: 1fr 1fr; }
   .search-input { width: 160px; }
   .nav-tab span { display: none; }
-  .nav-pills { display: none; }
   .user-menu-info { display: none; }
   .nav-logo span { display: none; }
   .page-header { flex-wrap: wrap; gap: var(--sp-sm); }
@@ -1521,8 +1520,13 @@ tbody td {
 
 .nav-pill {
   font-size: 12px;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: var(--r-full);
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
   background: var(--color-hairline-soft);
   color: var(--color-mute);
 }
