@@ -1095,7 +1095,7 @@ tbody td {
   .stats-row { grid-template-columns: 1fr 1fr; }
   .search-input { width: 160px; }
   .nav-tab span { display: none; }
-  .user-menu-info { display: none; }
+  /* Keep user-menu-info visible on mobile to show role badges */
   .nav-logo span { display: none; }
   .page-header { flex-wrap: wrap; gap: var(--sp-sm); }
   .page-title { font-size: 18px; }
@@ -1812,5 +1812,42 @@ tbody td {
   .select {
     font-size: 11px;
     min-width: 80px !important;
+  }
+}
+
+/* ── User menu responsive styling ──────────────────────────── */
+@media (max-width: 768px) {
+  .user-menu-info {
+    gap: 4px;
+  }
+  
+  .user-menu-name {
+    font-size: 12px;
+  }
+  
+  .badge-role-admin,
+  .badge-role-user {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  .user-menu-trigger {
+    gap: 6px;
+  }
+  
+  .user-menu-info {
+    gap: 3px;
+  }
+  
+  .user-menu-name {
+    font-size: 11px;
+  }
+  
+  .badge-role-admin,
+  .badge-role-user {
+    font-size: 9px;
+    padding: 2px 5px;
   }
 }
