@@ -1087,17 +1087,89 @@ tbody td {
   .charts-row { grid-template-columns: 1fr; }
   .salesperson-row { grid-template-columns: 1fr; }
   .calendar-layout { grid-template-columns: 1fr; grid-template-rows: auto 320px; }
+  .kanban-col { min-width: 220px; max-width: 240px; }
+  .detail-panel { width: 420px; }
 }
 
 @media (max-width: 768px) {
   .stats-row { grid-template-columns: 1fr 1fr; }
-  .search-input { width: 180px; }
+  .search-input { width: 160px; }
   .nav-tab span { display: none; }
+  .nav-pills { display: none; }
+  .user-menu-info { display: none; }
+  .nav-logo span { display: none; }
+  .page-header { flex-wrap: wrap; gap: var(--sp-sm); }
+  .page-title { font-size: 18px; }
+  .btn { font-size: 13px; padding: 0 10px; height: 30px; }
+  .btn-primary { font-size: 13px; padding: 0 10px; height: 30px; }
+  .btn-secondary { font-size: 13px; padding: 0 10px; height: 30px; }
+  .btn-icon { width: 28px; height: 28px; }
+  .modal { max-width: 92vw; margin: var(--sp-sm); }
+  .modal-body { padding: var(--sp-md); }
+  .modal-header { padding: var(--sp-md); }
+  .detail-panel { width: 100%; max-width: 100%; }
+  .detail-panel-overlay { align-items: flex-end; }
+  .detail-panel {
+    width: 100%; max-width: 100%;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    max-height: 75vh;
+  }
+  .calendar-day { min-height: 60px; }
+  .calendar-layout { grid-template-rows: auto 260px; }
+  .event-sidebar { max-height: 260px; }
+  .kanban-card { padding: var(--sp-xs) var(--sp-sm); }
+  .kanban-card-treatment { font-size: 11px; }
+  .kanban-card-name { font-size: 12px; }
+  .kanban-revenue { font-size: 11px; }
+  .kanban-col-body { min-height: 80px; }
+  .login-panel { width: 100%; }
+  .login-brand { display: none; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 560px; }
 }
 
 @media (max-width: 640px) {
   .stats-row { grid-template-columns: 1fr; }
-  .page-body { padding: var(--sp-md); }
+  .page-body { padding: var(--sp-sm); }
+  .page-header { padding: var(--sp-sm) var(--sp-md); }
+  .search-input { width: 140px; }
+  .search-wrap { width: auto; }
+  .nav-tab { padding: 0 6px; gap: 4px; }
+  .top-nav { padding: 0 var(--sp-sm); height: 48px; gap: var(--sp-sm); }
+  .top-nav .search-wrap { display: none; }
+  .global-search-dropdown { width: 260px; right: -40px; }
+  .modal { max-width: 96vw; }
+  .modal-body { padding: var(--sp-sm); }
+  .modal-title { font-size: 15px; }
+  .detail-panel-body { padding: var(--sp-md); gap: var(--sp-md); }
+  .detail-row { margin-bottom: var(--sp-xs); }
+  .detail-section-title { margin-bottom: var(--sp-xs); }
+  .stage-btn { padding: 0 var(--sp-xs); height: 26px; font-size: 11px; }
+  .stage-selector { gap: 4px; }
+  .email-composer { gap: 4px; }
+  .event-item { padding: var(--sp-xs); }
+  .event-sidebar-header { padding: var(--sp-sm) var(--sp-md); }
+  .event-sidebar-body { padding: var(--sp-sm); }
+  .calendar-nav { padding: var(--sp-sm) var(--sp-md); }
+  .calendar-month-title { font-size: 14px; }
+  .calendar-weekday { font-size: 10px; }
+  .calendar-day { padding: 2px; min-height: 48px; }
+  .cal-date { width: 20px; height: 20px; font-size: 11px; }
+  .cal-event-dot { font-size: 10px; }
+  .badge { font-size: 10px; padding: 0 6px; height: 18px; }
+  .avatar-sm { width: 20px; height: 20px; font-size: 9px; }
+  .avatar-md { width: 28px; height: 28px; font-size: 11px; }
+  .text-input { font-size: 13px; padding: 6px 8px; }
+  .select { font-size: 12px; padding: 0 8px; height: 28px; }
+  .form-label { font-size: 11px; }
+  .chart-title { font-size: 13px; }
+  .sp-card-header { flex-direction: column; align-items: flex-start; gap: var(--sp-xs); }
+  .sp-stats { grid-template-columns: repeat(2, 1fr); }
+  .stat-value { font-size: 22px; }
+  .login-card-title { font-size: 20px; }
+  .login-tagline { font-size: 24px; }
+  .login-features li { font-size: 13px; }
+  .team-explainer-row { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
 
 /* ── Reduced motion ─────────────────────────── */
