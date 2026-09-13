@@ -17,6 +17,7 @@ Dentixcy CRM is a React + Vite SPA backed by Firebase Firestore for dental pract
 - **Navigation System**: Tab-based navigation with role-based access (Team tab admin-only)
 - **Global Search**: Lead search functionality with dropdown results
 - **State Management**: Local React state combined with Firestore real-time updates
+- **Email Sending**: Integrated Resend API for actual email sending (replacing EmailJS/console logging)
 
 ### 📋 Key Features Implemented
 1. **Lead Management**: Create, read, update, delete leads with stage tracking
@@ -45,6 +46,7 @@ The application implements the Vercel Geist design system as specified in DESIGN
 - **Firestore Rules**: Open rules for development (as noted in auth error handling)
 - **Code Organization**: Clear separation of concerns (context, hooks, components, pages, lib)
 - **Styling Approach**: CSS custom properties for design tokens in `index.css`
+- **Email Sending**: Resend API integration via Vercel serverless function (`api/send-resend.js`)
 
 ### 📱 Recent Improvements (Git History)
 Recent commits have focused on mobile responsiveness improvements:
