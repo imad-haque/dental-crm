@@ -232,6 +232,7 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
     onToast?.('Email service not available', 'error');
     return;
   }
+  console.log('Sending email to:', e.to);
   emailjs.send(
     "service_csef9jc",
     "template_z36xlpt",
@@ -241,12 +242,12 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
       message: e.body
     }
   )
-    .then(() => {
-      console.log('Email sent successfully to:', e.to);
+    .then((response) => {
+      console.log('✅ Email sent successfully!', response);
     })
     .catch((err) => {
-      console.error('EmailJS error:', err);
-      onToast?.('Failed to send email', 'error');
+      console.error('❌ EmailJS error:', err);
+      onToast?.('Failed to send email: ' + (err.text || err.message || 'Unknown error'), 'error');
     });
 }}
           onToast={onToast}
