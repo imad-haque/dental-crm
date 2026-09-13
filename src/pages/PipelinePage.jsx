@@ -226,7 +226,24 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
           }}
           onEdit={(lead) => { setEditLead(lead); setShowModal(true); setSelectedLead(null); }}
           onDelete={onDeleteLead}
-          onEmailSent={(e) => console.log('Email queued:', e)}
+          onEmailSent={(e) => {
+  emailjs.send(
+    "service_csef9jc",
+    "template_z36xlpt",
+    {
+      to_email: e.to,
+      subject: e.subject,
+      message: e.body
+    },
+    "tPZ98lzHf44f2WVBA"
+  )
+    .then(() => {
+      // Success toast is already handled by LeadDetailPanel
+    })
+    .catch((err) => {
+      console.error('EmailJS error:', err);
+    });
+}}
           onToast={onToast}
         />
       )}
