@@ -180,7 +180,7 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
           onEmailSent={(e) => {
   if (typeof emailjs === 'undefined') {
     console.error('EmailJS is not loaded');
-    onToast?.({ type: 'error', message: 'Email service not available' });
+    onToast?.('Email service not available', 'error');
     return;
   }
   emailjs.send(
@@ -197,7 +197,7 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
     })
     .catch((err) => {
       console.error('EmailJS error:', err);
-      onToast?.({ type: 'error', message: 'Failed to send email' });
+      onToast?.('Failed to send email', 'error');
     });
 }}
           onToast={onToast}
