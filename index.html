@@ -11,5 +11,14 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <script type="text/javascript">
+      // Initialize EmailJS with your user ID
+      if (typeof emailjs !== 'undefined') {
+        emailjs.init("tPZ98lzHf44f2WVBA");
+        console.log('EmailJS initialized successfully');
+      } else {
+        console.error('EmailJS script failed to load');
+      }
+    </script>
   </body>
 </html>

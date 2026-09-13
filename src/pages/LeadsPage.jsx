@@ -178,9 +178,9 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
           onEdit={(lead) => { setEditLead(lead); setShowModal(true); setSelectedLead(null); }}
           onDelete={onDeleteLead}
           onEmailSent={(e) => {
-  console.log('EmailJS send called with:', e);
   if (typeof emailjs === 'undefined') {
     console.error('EmailJS is not loaded');
+    onToast?.({ type: 'error', message: 'Email service not available' });
     return;
   }
   emailjs.send(
@@ -190,14 +190,14 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
       to_email: e.to,
       subject: e.subject,
       message: e.body
-    },
-    "tPZ98lzHf44f2WVBA"
+    }
   )
     .then(() => {
-      // Success toast is already handled by LeadDetailPanel
+      console.log('Email sent successfully to:', e.to);
     })
     .catch((err) => {
       console.error('EmailJS error:', err);
+      onToast?.({ type: 'error', message: 'Failed to send email' });
     });
 }}
           onToast={onToast}
