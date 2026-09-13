@@ -178,27 +178,31 @@ export default function LeadsPage({ leads, onAddLead, onUpdateLead, onDeleteLead
           onEdit={(lead) => { setEditLead(lead); setShowModal(true); setSelectedLead(null); }}
           onDelete={onDeleteLead}
           onEmailSent={(e) => {
-  if (typeof emailjs === 'undefined') {
-    console.error('EmailJS is not loaded');
-    onToast?.('Email service not available', 'error');
-    return;
-  }
-  console.log('Sending email to:', e.to);
-  emailjs.send(
-    "service_csef9jc",
-    "template_z36xlpt",
-    {
-      to_email: e.to,
+  console.log('Sending email via Resend to:', e.to);
+  fetch('/api/send-resend', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      to: e.to,
       subject: e.subject,
-      message: e.body
-    }
-  )
-    .then((response) => {
-      console.log('✅ Email sent successfully!', response);
+      message: e.body,
+    }),
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log('✅ Email sent successfully via Resend:', data);
     })
     .catch((err) => {
-      console.error('❌ EmailJS error:', err);
-      onToast?.('Failed to send email: ' + (err.text || err.message || 'Unknown error'), 'error');
+      console.error('❌ Email sending error:', err);
+      onToast?.('Failed to send email: ' + err.message, 'error');
     });
 }}
           onToast={onToast}
