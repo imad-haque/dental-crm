@@ -227,6 +227,11 @@ export default function PipelinePage({ leads, onAddLead, onUpdateLead, onDeleteL
           onEdit={(lead) => { setEditLead(lead); setShowModal(true); setSelectedLead(null); }}
           onDelete={onDeleteLead}
           onEmailSent={(e) => {
+  console.log('EmailJS send called with:', e);
+  if (typeof emailjs === 'undefined') {
+    console.error('EmailJS is not loaded');
+    return;
+  }
   emailjs.send(
     "service_csef9jc",
     "template_z36xlpt",
